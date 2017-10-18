@@ -30,7 +30,7 @@ class AzureActivityLogInputTest < Test::Unit::TestCase
     assert_equal 'test_client_secret', d.instance.client_secret
     assert_equal 'eventName,id,resourceGroupName,resourceProviderName,operationName,status,eventTimestamp,correlationId', d.instance.select_filter
     assert_equal 'test_event_channels', d.instance.event_channels
-    assert_equal '300', d.instance.interval
+    assert_equal 300, d.instance.interval
   end
 
 end
