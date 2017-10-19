@@ -3,7 +3,11 @@
 
 ***Azure Activity log*** input plugin.
 
-This plugin is simple, it gets the activity logs from Azure Monitor API to fluentd..
+This plugin gets the activity logs from Azure Monitor API to fluentd.
+
+Installation
+
+$ gem install fluent-plugin-azureactivitylog
 
 ## Configuration
 
