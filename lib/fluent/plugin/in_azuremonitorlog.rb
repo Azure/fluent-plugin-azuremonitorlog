@@ -2,8 +2,8 @@ require 'fluent/input'
 require 'azure_mgmt_monitor'
 require 'uri'
 
-class Fluent::AzureActivityLogInput < Fluent::Input
-  Fluent::Plugin.register_input("azureactivitylog", self)
+class Fluent::AzureMonitorLogInput < Fluent::Input
+  Fluent::Plugin.register_input("azuremonitorlog", self)
 
   # To support log_level option implemented by Fluentd v0.10.43
   unless method_defined?(:log)
@@ -21,10 +21,10 @@ class Fluent::AzureActivityLogInput < Fluent::Input
   config_param :client_id,          :string, :default => nil
   config_param :client_secret,      :string, :default => nil, :secret => true
 
-  config_param :select_filter,      :string, :default => nil
-  config_param :event_channels,     :string, :default => "Admin, Operation"
-  config_param :interval,           :integer, :default => 300
-
+  config_param :select,             :string, :default => nil
+  config_param :filter,             :string, :default => "eventChannels eq 'Admin, Operation'"
+  config_param :interval,           :integer,:default => 300
+  config_param :api_version,        :string, :default => '2015-04-01'
   def initialize
     super
   end
@@ -49,11 +49,29 @@ class Fluent::AzureActivityLogInput < Fluent::Input
     @watcher.join
   end
 
+  def set_query_options(filter, custom_headers)
+    fail ArgumentError, 'path is nil' if @client.subscription_id.nil?
+
+    request_headers = {}
+
+    # Set Headers
+    request_headers['x-ms-client-request-id'] = SecureRandom.uuid
+    request_headers['accept-language'] = @client.accept_language unless @client.accept_language.nil?
+
+    {
+        middlewares: [[MsRest::RetryPolicyMiddleware, times: 3, retry: 0.02], [:cookie_jar]],
+        path_params: {'subscriptionId' => @client.subscription_id},
+        query_params: {'api-version' => @api_version, '$filter' => filter, '$select' => @select},
+        headers: request_headers.merge(custom_headers || {}),
+        base_url: @client.base_url
+    }
+  end
+
   private
 
   def watch
     while true
-        log.debug "azure activitylog: watch thread starting"
+        log.debug "azure monitorlog: watch thread starting"
         output
         sleep @interval
     end
@@ -66,40 +84,25 @@ class Fluent::AzureActivityLogInput < Fluent::Input
       log.debug "start time: #{start_time}, end time: #{end_time}"
       filter = "eventTimestamp ge '#{start_time}' and eventTimestamp le '#{end_time}'"
 
-      if !@event_channels.empty?
-        filter += " and eventChannels eq '#{@event_channels}'"
+      if !@filter.empty?
+        filter += " and #{@filter}"
       end
 
-      activity_logs_promise = get_activity_log_async(filter)
-      activity_logs = activity_logs_promise.value!
+      monitor_logs_promise = get_monitor_log_async(filter)
+      monitor_logs = monitor_logs_promise.value!
 
-      if activity_logs.body.values[0].any?
-        activity_logs.body.values[0].each {|val|
-          router.emit(@tag, Time.now.to_i, val.to_json)
+      if !monitor_logs.body['value'].nil? and  monitor_logs.body['value'].any?
+        monitor_logs.body['value'].each {|val|
+          router.emit(@tag, Time.now.to_i, val)
         }
       else
         log.debug "empty"
       end
   end
 
-  def get_activity_log_async(filter = nil, custom_headers = nil)
-    fail ArgumentError, 'path is nil' if @client.subscription_id.nil?
-    api_version = '2015-04-01'
-
-    request_headers = {}
-
-    # Set Headers
-    request_headers['x-ms-client-request-id'] = SecureRandom.uuid
-    request_headers['accept-language'] = @client.accept_language unless @client.accept_language.nil?
+  def get_monitor_log_async(filter = nil, custom_headers = nil)
+    options = set_query_options(filter, custom_headers)
     path_template = '/subscriptions/{subscriptionId}/providers/microsoft.insights/eventtypes/management/values'
-
-    options = {
-        middlewares: [[MsRest::RetryPolicyMiddleware, times: 3, retry: 0.02], [:cookie_jar]],
-        path_params: {'subscriptionId' => @client.subscription_id},
-        query_params: {'api-version' => api_version, '$filter' => filter, '$select' => @select_filter},
-        headers: request_headers.merge(custom_headers || {}),
-        base_url: @client.base_url
-    }
     promise = @client.make_request_async(:get, path_template, options)
 
     promise = promise.then do |result|
@@ -108,7 +111,7 @@ class Fluent::AzureActivityLogInput < Fluent::Input
       response_content = http_response.body
       unless status_code == 200
         error_model = JSON.load(response_content)
-        fail MsRestAzure::AzureOperationError.new(result.request, http_response, error_model)
+        log.error(error_model['error']['message'])
       end
 
       result.request_id = http_response['x-ms-request-id'] unless http_response['x-ms-request-id'].nil?
@@ -117,7 +120,7 @@ class Fluent::AzureActivityLogInput < Fluent::Input
         begin
           result.body = response_content.to_s.empty? ? nil : JSON.load(response_content)
         rescue Exception => e
-          fail MsRest::DeserializationError.new('Error occurred in parsing the response', e.message, e.backtrace, result)
+          log.error("Error occurred in parsing the response")
         end
       end
 

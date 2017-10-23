@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    fluent-plugin-azureactivitylog (0.0.1)
+    fluent-plugin-azuremonitorlog (0.0.2)
       azure_mgmt_monitor (~> 0.11.0)
       fluentd (>= 0.10.30)
 
@@ -68,9 +68,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  fluent-plugin-azureactivitylog!
+  fluent-plugin-azuremonitorlog!
   rake (>= 0.9.2)
   test-unit (>= 3.1.0)
 
 BUNDLED WITH
-   1.11.2
+   1.15.4

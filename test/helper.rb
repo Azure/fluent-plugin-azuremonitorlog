@@ -24,7 +24,7 @@ unless ENV.has_key?("VERBOSE")
   $log = nulllogger
 end
 
-require "fluent/plugin/in_azureactivitylog"
+require "fluent/plugin/in_azuremonitorlog"
 
 class Test::Unit::TestCase
 end
