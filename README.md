@@ -4,16 +4,17 @@
 ***Azure Monitor log*** input plugin.
 
 This plugin gets the monitor activity logs from Azure Monitor API to fluentd.
+[Azure Monitor Activity Logs documentation](https://docs.microsoft.com/en-us/rest/api/monitor/ActivityLogs/List)
 
 ## Installation
 
-Install from RubyGems:
+To use this plugin, you need to have Azure Service Principal.<br/>
+Create an Azure Service Principal through [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2fazure%2fazure-resource-manager%2ftoc.json) or [Azure portal](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-service-principal-portal).
+
+Install plugin from RubyGems:
 ```
 $ gem install fluent-plugin-azuremonitorlog
 ```
-
-To use this plugin, you need to have Azure Service Principal.<br/>
-Create an Azure Service Principal through [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2fazure%2fazure-resource-manager%2ftoc.json) or [Azure portal](https://docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-create-service-principal-portal).
 
 ## Configuration
 
@@ -48,6 +49,45 @@ Documentation for select and filter can be found [here](https://docs.microsoft.c
     select_filter eventName,id,resourceGroupName,resourceProviderName,operationName,status,eventTimestamp,correlationId,submissionTimestamp,level
 </source>
 
+```
+Start fluentd:
+
+```
+$ fluentd -c ./fluentd.conf
+```
+
+output example: 
+```
+{
+	"correlationId": "00000000-0000-0000-0000-000000000000",
+	"eventName": {
+		"value": "EndRequest",
+		"localizedValue": "End request"
+	},
+	"id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourcegroups/myresourcegroup/events/00000000-0000-0000-0000-000000000000/ticks/636444295616045190",
+	"resourceGroupName": "myresourcegroup",
+	"resourceProviderName": {
+		"value": "Microsoft.Resources",
+		"localizedValue": "Microsoft Resources"
+	},
+	"operationName": {
+		"value": "Microsoft.Resources/subscriptions/resourcegroups/write",
+		"localizedValue": "Update resource group"
+	},
+	"status": {
+		"value": "Succeeded",
+		"localizedValue": "Succeeded"
+	},
+	"eventTimestamp": "2017-10-24T08:12:41.604519Z"
+}
+```
+
+## Test
+
+Run tests:
+
+```
+$ rake test
 ```
 
 ## Contributing
