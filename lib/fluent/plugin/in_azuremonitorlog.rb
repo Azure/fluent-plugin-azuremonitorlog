@@ -40,11 +40,13 @@ class Fluent::AzureMonitorLogInput < Fluent::Input
 
   def start
     super
+    @finished = false
     @watcher = Thread.new(&method(:watch))
   end
 
   def shutdown
     super
+    @finished = true
     @watcher.terminate
     @watcher.join
   end
@@ -70,17 +72,13 @@ class Fluent::AzureMonitorLogInput < Fluent::Input
   private
 
   def watch
-    while true
-        log.debug "azure monitorlog: watch thread starting"
-        output
-        sleep @interval
-    end
-  end
+    log.debug "azure monitorlog: watch thread starting"
 
-  def output
-      start_time = Time.now - @interval
-      end_time = Time.now
-      
+    @next_fetch_time = Time.now
+
+    until @finished
+      start_time = @next_fetch_time - @interval
+      end_time = @next_fetch_time
       log.debug "start time: #{start_time}, end time: #{end_time}"
       filter = "eventTimestamp ge '#{start_time}' and eventTimestamp le '#{end_time}'"
 
@@ -98,6 +96,10 @@ class Fluent::AzureMonitorLogInput < Fluent::Input
       else
         log.debug "empty"
       end
+      @next_fetch_time += @interval
+      sleep @interval
+    end
+
   end
 
   def get_monitor_log_async(filter = nil, custom_headers = nil)
