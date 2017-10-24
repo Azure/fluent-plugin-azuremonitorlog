@@ -1,7 +1,7 @@
 # fluent-plugin-azuremonitorlog, a plugin for [Fluentd](http://fluentd.org) 
 ## Overview
 
-[***Azure Monitor log***])(https://docs.microsoft.com/en-us/rest/api/monitor/ActivityLogs/List) input plugin.
+[Azure Monitor log](https://docs.microsoft.com/en-us/rest/api/monitor/ActivityLogs/List) input plugin. 
 
 This plugin gets the monitor activity logs from Azure Monitor API to fluentd.
 
