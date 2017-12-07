@@ -4,11 +4,11 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |gem|
   gem.name          = "fluent-plugin-azuremonitorlog"
-  gem.version       = "0.0.1"
+  gem.version       = "0.0.3"
   gem.authors       = ["Ilana Kantorov"]
   gem.email         = ["ilanak@microsoft.com"]
   gem.description   = %q{Input plugin for Azure Monitor Activity logs.}
-  gem.homepage      = "https://github.com/Ilanak/fluent-plugin-azureamonitorlog"
+  gem.homepage      = "https://github.com/Azure/fluent-plugin-azureamonitorlog"
   gem.summary       = gem.description
   gem.files         = `git ls-files`.split($\)
   gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
